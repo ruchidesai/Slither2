@@ -1,0 +1,284 @@
+;;;Accept the file containing the board description from the user and initialize counter boards
+(defun create-board (filename)
+  (let ((infile (open filename)))
+    (setq board (read infile))
+    (setq pboard board)
+    (setq cboard (mapcar (lambda (xx) (cond ((listp xx) (mapcar (lambda (yy) (cond ((constantp yy) 0)
+                                                                                (t yy) )) xx ))
+                                           (t nil) )) board ))
+    (close infile) ) )
+    
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Initialize the lists of moves
+(defun initialize-for-dfs ()
+  (setq list-of-moves nil)
+  (setq final-moves nil)
+  (setq num-of-rows (list-length board))
+  (setq num-of-cols (list-length (car board)))
+  (loop for ii from 0 to (1- num-of-rows) do
+    (loop for jj from 0 to (1- num-of-cols) do
+      (push (list (list ii jj 'L) nil 'W) list-of-moves)
+      (push (list (list ii jj 'T) nil 'W) list-of-moves)
+      (cond ((equal jj (1- num-of-cols)) (push (list (list ii jj 'R) nil 'W) list-of-moves))
+            (t nil) ) )
+    (cond ((equal ii (1- num-of-rows)) (loop for jj from 0 to (1- num-of-cols) do
+                                   (push (list (list ii jj 'B) nil 'W) list-of-moves) ))
+          (t nil) ) ) )
+          
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Return the edge of the adjacent square that gets affected due to current move
+(defun get-duplicate-move (rrr ccc eee)
+  (cond ((equal ccc 0) (cond ((equal eee 'R) (list rrr (1+ ccc) 'L))
+                           ((and (equal rrr 0) (equal eee 'B)) (list (1+ rrr) ccc 'T))
+                           ((and (equal rrr (1- num-of-rows)) (equal eee 'T)) (list (1- rrr) ccc 'B))
+                           (t (cond ((and (< rrr (1- num-of-rows)) (equal eee 'B)) (list (1+ rrr) ccc 'T))
+                                    ((and (> rrr 0) (equal eee 'T)) (list (1- rrr) ccc 'B))
+                                    (t nil) )) ))
+        ((equal ccc (1- num-of-cols)) (cond ((equal eee 'L) (list rrr (1- ccc) 'R))
+                                          ((and (equal rrr 0) (equal eee 'B)) (list (1+ rrr) ccc 'T))
+                                          ((and (equal rrr (1- num-of-rows)) (equal eee 'T)) (list (1- rrr) ccc 'B))
+                                          (t (cond ((and (< rrr (1- num-of-rows)) (equal eee 'B)) (list (1+ rrr) ccc 'T))
+                                                   ((and (> rrr 0) (equal eee 'T)) (list (1- rrr) ccc 'B))
+                                                   (t nil) )) ))
+        (t (cond ((equal eee 'R) (list rrr (1+ ccc) 'L))
+                 ((equal eee 'L) (list rrr (1- ccc) 'R))
+                 ((and (< rrr (1- num-of-rows)) (equal eee 'B)) (list (1+ rrr) ccc 'T))
+                 ((and (> rrr 0) (equal eee 'T)) (list (1- rrr) ccc 'B))
+                 (t nil) )) ) )
+                 
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Increment the counter for a particular square
+(defun update-square (rrrr cccc type)
+  (cond ((equal type 1) (cond ((numberp (nth cccc (nth rrrr cboard))) (setf (nth cccc (nth rrrr cboard)) (1+ (nth cccc (nth rrrr cboard)))))
+                              (t nil) ))
+        (t (cond ((numberp (nth cccc (nth rrrr cboard))) (setf (nth cccc (nth rrrr cboard)) (1- (nth cccc (nth rrrr cboard))))(princ "deleting ")(princ rrrr)(princ cccc)(terpri))
+                 (t nil) )) ) )
+                 
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Update the counter-board (cboard) based on the move
+(defun update-score (rr cc ee type)
+  (update-square rr cc type)
+  (setq dmove (get-duplicate-move rr cc ee))
+  (princ "dmove ")(princ dmove)(terpri)
+  (cond ((null dmove) nil)
+        (t (setq rr (nth 0 dmove))
+           (setq cc (nth 1 dmove))
+           (update-square rr cc type)) ) )
+           
+;;------------------------------------------------------------------------------------------------------------------------------
+
+(defun make-move (d f g)
+  (update-score d f g 1)
+  (push (list d f g) final-moves) )
+
+;;------------------------------------------------------------------------------------------------------------------------------    
+
+;;;Check if there is any T shape (crossing or branch)
+(defun is-crossing (num-of-rows num-of-cols)
+  (setq crossing 0)
+  (loop for x from 0 to (1- num-of-rows) do
+    (loop for y from 0 to (- num-of-cols 2) do
+      (cond ((and (member (list x y 'T) final-moves :test #'equal)
+                  (member (list x (1+ y) 'T) final-moves :test #'equal)
+                  (member (list x (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+            (t nil) )
+      (cond ((> x 0) (cond ((and (member (list x y 'T) final-moves :test #'equal)
+                                 (member (list x (1+ y) 'T) final-moves :test #'equal)
+                                 (member (list (1- x) (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+                           (t nil) ) )
+            (t nil) )
+      (cond ((equal x (1- num-of-rows)) (cond ((and (member (list x y 'B) final-moves :test #'equal)
+                                                    (member (list x (1+ y) 'B) final-moves :test #'equal)
+                                                    (member (list x (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+                                              (t nil) ))
+            (t nil) ) ) )
+  (loop for y from 0 to (1- num-of-cols) do
+    (loop for x from 0 to (- num-of-rows 2) do
+      (cond ((and (member (list x y 'L) final-moves :test #'equal)
+                  (member (list (1+ x) y 'T) final-moves :test #'equal)
+                  (member (list (1+ x) y 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+            (t nil) )
+      (cond ((> y 0) (cond ((and (member (list x y 'L) final-moves :test #'equal)
+                                 (member (list (1+ x) (1- y) 'T) final-moves :test #'equal)
+                                 (member (list (1+ x) y 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+                           (t nil) ) )
+            (t nil) )
+      (cond ((equal y (1- num-of-cols)) (cond ((and (member (list x y 'R) final-moves :test #'equal)
+                                                    (member (list (1+ x) y 'R) final-moves :test #'equal)
+                                                    (member (list (1+ x) y 'T) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
+                                              (t nil) ))
+            (t nil) ) ) )
+  (cond ((> crossing 0) t)
+        (t nil) ) )
+
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Set edge in edge counter
+(defun update-edge-count (k edge-type direction)
+  (cond ((equal direction 0) (setf (nth k edge-type)
+                             (1- (nth k edge-type)) ) )
+        (t (setf (nth k edge-type) (1+ (nth k edge-type))) ) ) )
+        
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Check if loop is closed
+(defun is-loop ()
+  (setq v (make-list num-of-rows :initial-element 0))
+  (setq h (make-list num-of-cols :initial-element 0))
+  (loop for amove in final-moves do
+    (cond ((or (equal (nth 2 amove) 'L)
+               (equal (nth 2 amove) 'R) ) (update-edge-count (nth 0 amove) v 1) )
+          (t (update-edge-count (nth 1 amove) h 1)) ) ) 
+    (cond ((or (some #'(lambda (n) (equal (mod n 2) 1)) h)
+               (some #'(lambda (n) (equal (mod n 2) 1)) v) ) nil )
+          (t t) ) )
+          
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;Remove marked move from the board
+(defun undo-move (move)
+  (update-score (nth 0 move) (nth 1 move) (nth 2 move) 0)
+  (princ "Undo ") (princ move) (terpri)
+  (princ final-moves)(terpri)
+  (setf final-moves (delete move final-moves :test #'equal))
+  (princ final-moves)(terpri) )
+  
+;;------------------------------------------------------------------------------------------------------------------------------
+
+(defun print-row (row r c)    
+  (cond ((null row) (cond ((member (list r (1- c) 'R) final-moves :test #'equal) (princ "|"))
+                          (t (princ " ")) ))
+        (t (cond ((member (list r c 'L) final-moves :test #'equal) (princ "|"))
+                 ((member (list r (1- c) 'R) final-moves :test #'equal) (princ "|"))
+                 (t (princ " ")) )
+           (cond ((equal '- (car row)) (princ " "))
+                 (t (princ (car row))) )
+           (print-row (cdr row) r (1+ c)) ) ) )
+           
+;;------------------------------------------------------------------------------------------------------------------------------
+
+(defun print-board (pboard num-of-rows num-of-cols mypos)
+  (cond ((null pboard) (princ "  +")
+                       (setq l 0)
+                       (loop
+                         (cond ((member (list (1- num-of-rows) l 'B) final-moves :test #'equal) (princ "-")
+                                                                                                  (princ "+"))
+                               (t (princ " ")
+                                  (princ "+")) )
+                         (setq l (1+ l))
+                         (when (equal l num-of-cols)
+                           (terpri)
+                           (return t) ) ) )
+        (t (princ "  +")
+           (setq l 0)
+           (loop
+             (cond ((member (list mypos l 'T) final-moves :test #'equal) (princ "-")
+                                                                           (princ "+"))
+                   ((member (list (1- mypos) l 'B) final-moves :test #'equal) (princ "-")
+                                                                                (princ "+"))
+                   (t (princ " ")
+                      (princ "+")) )
+             (setq l (1+ l))
+             (when (equal l num-of-cols)
+               (terpri)
+               (return t) ) )
+           (princ (1+ mypos))
+           (princ " ")          
+           (print-row (car pboard) mypos 0)
+           (terpri)
+           (print-board (cdr pboard) num-of-rows num-of-cols (1+ mypos))
+           (terpri) ) ) )
+
+;;------------------------------------------------------------------------------------------------------------------------------
+
+;;;depth first search
+(defun dfs (move list-of-moves pboard)
+  (setq i (nth 0 (car move)))
+  (setq j (nth 1 (car move)))
+  (setq e (nth 2 (car move)))
+  (setf (nth 2 (find move list-of-moves :test #'equal)) 'G)
+  (princ "Before making move final moves: ") (princ final-moves)(terpri)
+  (princ "Move: ") (princ move) (terpri)
+  (make-move i j e)  
+  (princ "After making move final moves: ")(princ final-moves) (terpri)
+  (princ "Cboard: ")(princ cboard) (terpri)
+  (print-board pboard num-of-rows num-of-cols 0)
+  (read)
+  (cond ((is-crossing num-of-rows num-of-cols) (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
+                                                           (princ "Is crossing")(terpri)
+                                                           (undo-move (list i j e))
+														   (princ "just after undo from dfs: ") (princ final-moves) (terpri)
+														   (princ "Backtracking...") (terpri)
+                                                           (return-from dfs 0) )
+        ((is-loop) (cond ((equal cboard board) (princ "Backtracking...") (terpri)(return-from dfs 1))
+                                     (t (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
+                                        (princ "Is loop but cboard not equal to board")
+                                        (undo-move (list i j e))
+										(princ "just after undo from dfs: ") (princ final-moves) (terpri)
+										(princ "Backtracking...") (terpri)
+                                        (return-from dfs 0) ) ))
+        (t (cond ((equal e 'T) (push (position (list i j 'L) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                               (cond ((< j (1- num-of-cols)) (push (position (list i (1+ j) 'T) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                             (push (position (list i (1+ j) 'L) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                             (cond ((> i 0) (push (position (list (1- i) (1+ j) 'L) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                                                   (t nil) ) )
+                                     (t nil) )
+                               (cond ((> j 0) (push (position (list i (1- j) 'T) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) )
+                               (cond ((> i 0) (push (position (list (1- i) j 'L) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) )
+                               (cond ((equal j (1- num-of-cols)) (cond ((> i 0) (push (position (list (1- i) j 'R) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                                                       (t nil) )
+                                                                 (push (position (list i j 'R) list-of-moves :key #'car :test #'equal) (nth 1 move)) )
+                                     (t nil) ) )
+                 ((equal e 'L) (push (position (list i j 'T) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                               (cond ((< i (1- num-of-cols)) (push (position (list (1+ i) j 'T) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                             (push (position (list (1+ i) j 'L) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                             (cond ((> j 0) (push (position (list (1+ i) (1- j) 'T) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                                                   (t nil) ) )
+                                     (t nil) )
+                               (cond ((> j 0) (push (position (list i (1- j) 'T) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) )
+                               (cond ((> i 0) (push (position (list (1- i) j 'L) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) )
+                               (cond ((equal i (1- num-of-rows)) (push (position (list i j 'B) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                                 (cond ((> j 0) (push (position (list i (1- j) 'B) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                                                       (t nil) ))
+                                     (t nil) ) )
+                 ((equal e 'R) (push (position (list i j 'T) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                               (cond ((< i (1- num-of-rows)) (push (position (list (1+ i) j 'R) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                             (push (position (list (1+ i) j 'T) list-of-moves :key #'car :test #'equal) (nth 1 move)) )
+                                     (t nil) )
+                               (cond ((> i 0) (push (position (list (1- i) j 'R) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) )
+                               (cond ((equal i (1- num-of-rows)) (push (position (list i j 'B) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                                     (t nil) ) )
+                 (t (push (position (list i j 'L) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                    (cond ((< j (1- num-of-cols)) (push (position (list i (1+ j) 'B) list-of-moves :key #'car :test #'equal) (nth 1 move))
+                                                  (push (position (list i (1+ j) 'L) list-of-moves :key #'car :test #'equal) (nth 1 move)) )
+                          (t nil) )
+                    (cond ((> j 0) (push (position (list i (1- j) 'B) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                          (t nil) )
+                    (cond ((equal j (1- num-of-cols)) (push (position (list i j 'R) list-of-moves :key #'car :test #'equal) (nth 1 move)))
+                          (t nil) ) ) )
+			(princ "Neighbor list = ")(princ (nth 1 move)) (terpri)
+            (loop for neighbor in (nth 1 move) do
+              (cond ((equal 'W (nth 2 (nth neighbor list-of-moves))) (princ "Neighbor: ") (princ (nth neighbor list-of-moves))(terpri)
+			                                                         (setq result (dfs (nth neighbor list-of-moves) list-of-moves pboard))
+                                                                     (cond ((equal 1 result) (princ "Backtracking...") (terpri)(return-from dfs 1))
+                                                                           (t (setf (nth 1 move) (remove neighbor (nth 1 move)))) ) )
+                    (t (setf (nth 1 move) (remove neighbor (nth 1 move)))) ) ) ) )
+  (princ "Move = ")(princ move)(terpri)
+  (princ "Neighbor list = ")(princ (nth 1 move)) (terpri)
+  (princ "Reached end of the function. No idea what to do")(terpri)
+  (princ "Final moves = ")(princ final-moves)(terpri)
+  (princ "Is loop = ")(princ (is-loop))(terpri)
+  (princ "Is crossing = ")(princ (is-crossing num-of-rows num-of-cols))(terpri)
+  (princ "cboard = ")(princ cboard)(terpri)
+  (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
+  (undo-move (car move))
+  (return-from dfs 0))
