@@ -18,12 +18,22 @@
   (setq num-of-cols (list-length (car board)))
   (loop for ii from 0 to (1- num-of-rows) do
     (loop for jj from 0 to (1- num-of-cols) do
-      (push (list (list ii jj 'L) nil 'W) list-of-moves)
-      (push (list (list ii jj 'T) nil 'W) list-of-moves)
-      (cond ((equal jj (1- num-of-cols)) (push (list (list ii jj 'R) nil 'W) list-of-moves))
+      (cond ((> ii 0) (cond ((equal 0 (nth jj (nth (1- ii) board))) (push (list (list ii jj 'T) nil 'B) list-of-moves))
+                            (t nil) ))
+            (t nil) )
+      (cond ((> jj 0) (cond ((equal 0 (nth (1- jj) (nth ii board))) (push (list (list ii jj 'L) nil 'B) list-of-moves))
+                            (t nil) ))
+            (t nil) )
+      (cond ((equal 0 (nth jj (nth ii board))) (push (list (list ii jj 'L) nil 'B) list-of-moves)
+                                               (push (list (list ii jj 'T) nil 'B) list-of-moves) )
+            (t (push (list (list ii jj 'L) nil 'W) list-of-moves)
+               (push (list (list ii jj 'T) nil 'W) list-of-moves) ) )
+      (cond ((equal jj (1- num-of-cols)) (cond ((equal 0 (nth jj (nth ii board))) (push (list (list ii jj 'R) nil 'B) list-of-moves))
+                                               (t (push (list (list ii jj 'R) nil 'W) list-of-moves)) ) )
             (t nil) ) )
     (cond ((equal ii (1- num-of-rows)) (loop for jj from 0 to (1- num-of-cols) do
-                                       (push (list (list ii jj 'B) nil 'W) list-of-moves) ))
+                                       (cond ((equal 0 (nth jj (nth ii board))) (push (list (list ii jj 'B) nil 'B) list-of-moves))
+                                             (t (push (list (list ii jj 'B) nil 'W) list-of-moves)) ) ))
           (t nil) ) ) )
           
 ;;------------------------------------------------------------------------------------------------------------------------------
