@@ -165,6 +165,15 @@
   
 ;;------------------------------------------------------------------------------------------------------------------------------
 
+;;;Check if adding an edge would violate the number of edges that square is supposed to have
+(defun counter-mismatch (i j e)
+  (cond ((> (nth j (nth i cboard)) (nth j (nth i board))) t)
+        (t (setq dupmove (get-duplicate-move i j e)) (cond ((and (not (null dupmove))
+                                                                 (> (nth (nth 1 dupmove) (nth (nth 0 dupmove) cboard)) (nth (nth 1 dupmove) (nth (nth 0 dupmove) board))) ) t)
+                                                           (t nil) )) ) )
+
+;;------------------------------------------------------------------------------------------------------------------------------
+
 (defun print-row (row r c)    
   (cond ((null row) (cond ((member (list r (1- c) 'R) final-moves :test #'equal) (princ "|"))
                           (t (princ " ")) ))
@@ -218,9 +227,12 @@
   (setq e (nth 2 (car move)))
   (setf (nth 2 (find move list-of-moves :test #'equal)) 'G)
   (make-move i j e)
-  (cond ((is-crossing num-of-rows num-of-cols) (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
-                                               (undo-move (list i j e))
-                                               (return-from dfs 0) )
+  ;;(read)
+  ;;(print-board pboard num-of-rows num-of-cols 0)
+  (cond ((or (counter-mismatch i j e)
+             (is-crossing num-of-rows num-of-cols) ) (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
+                                                     (undo-move (list i j e))
+                                                     (return-from dfs 0) )
         ((is-loop) (cond ((equal cboard board) (return-from dfs 1))
                          (t (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
                             (undo-move (list i j e))
