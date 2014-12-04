@@ -1,0 +1,20 @@
+Real time: 0.0240014 sec.
+Run time: 0.0312002 sec.
+Space: 99992 Bytes
+
+Real time: 0.018001 sec.
+Run time: 0.0156001 sec.
+Space: 42880 Bytes
+
+board12
+Real time: 30.728758 sec.
+Run time: 30.482595 sec.
+Space: 196919632 Bytes
+GC: 329, GC time: 0.9204059 sec.
+
+board11
+Real time: 103.70393 sec.
+Run time: 103.02306 sec.
+Space: 623986592 Bytes
+GC: 1045, GC time: 3.0264194 sec.
+
