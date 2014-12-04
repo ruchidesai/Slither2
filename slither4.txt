@@ -7,7 +7,7 @@
                                                                                    (t yy) )) xx ))
                                             (t nil) )) board ))
     (close infile) ) )
-    
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Initialize the lists of moves
@@ -35,7 +35,7 @@
                                        (cond ((equal 0 (nth jj (nth ii board))) (push (list (list ii jj 'B) nil 'B) list-of-moves))
                                              (t (push (list (list ii jj 'B) nil 'W) list-of-moves)) ) ))
           (t nil) ) ) )
-          
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Return the edge of the adjacent square that gets affected due to current move
@@ -67,7 +67,7 @@
                  ((and (> rrr 0)
                        (equal eee 'T) ) (list (1- rrr) ccc 'B) )
                  (t nil) )) ) )
-                 
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Increment the counter for a particular square
@@ -76,7 +76,7 @@
                               (t nil) ))
         (t (cond ((numberp (nth cccc (nth rrrr cboard))) (setf (nth cccc (nth rrrr cboard)) (1- (nth cccc (nth rrrr cboard)))))
                  (t nil) )) ) )
-                 
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Update the counter-board (cboard) based on the move
@@ -87,52 +87,117 @@
         (t (setq rr (nth 0 dmove))
            (setq cc (nth 1 dmove))
            (update-square rr cc type)) ) )
-           
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 (defun make-move (d f g)
   (update-score d f g 1)
   (push (list d f g) final-moves) )
 
-;;------------------------------------------------------------------------------------------------------------------------------    
+;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Check if there is any T shape (crossing or branch)
-(defun is-crossing (num-of-rows num-of-cols)
-  (setq crossing 0)
-  (loop for x from 0 to (1- num-of-rows) do
-    (loop for y from 0 to (- num-of-cols 2) do
-      (cond ((and (member (list x y 'T) final-moves :test #'equal)
-                  (member (list x (1+ y) 'T) final-moves :test #'equal)
-                  (member (list x (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-            (t nil) )
-      (cond ((> x 0) (cond ((and (member (list x y 'T) final-moves :test #'equal)
-                                 (member (list x (1+ y) 'T) final-moves :test #'equal)
-                                 (member (list (1- x) (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-                           (t nil) ) )
-            (t nil) )
-      (cond ((equal x (1- num-of-rows)) (cond ((and (member (list x y 'B) final-moves :test #'equal)
-                                                    (member (list x (1+ y) 'B) final-moves :test #'equal)
-                                                    (member (list x (1+ y) 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-                                              (t nil) ))
-            (t nil) ) ) )
-  (loop for y from 0 to (1- num-of-cols) do
-    (loop for x from 0 to (- num-of-rows 2) do
-      (cond ((and (member (list x y 'L) final-moves :test #'equal)
-                  (member (list (1+ x) y 'T) final-moves :test #'equal)
-                  (member (list (1+ x) y 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-            (t nil) )
-      (cond ((> y 0) (cond ((and (member (list x y 'L) final-moves :test #'equal)
-                                 (member (list (1+ x) (1- y) 'T) final-moves :test #'equal)
-                                 (member (list (1+ x) y 'L) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-                           (t nil) ) )
-            (t nil) )
-      (cond ((equal y (1- num-of-cols)) (cond ((and (member (list x y 'R) final-moves :test #'equal)
-                                                    (member (list (1+ x) y 'R) final-moves :test #'equal)
-                                                    (member (list (1+ x) y 'T) final-moves :test #'equal) ) (setq crossing (1+ crossing)) )
-                                              (t nil) ))
-            (t nil) ) ) )
-  (cond ((> crossing 0) t)
-        (t nil) ) )
+(defun is-crossing (i j e num-of-rows num-of-cols)
+  (cond ((equal e 'T) (cond ((equal j 0) (cond ((equal i 0) (cond ((and (member (list i (1+ j) 'T) final-moves :test #'equal)
+                                                                        (member (list i (1+ j) 'L) final-moves :test #'equal) ) t )
+                                                                  (t nil) ))
+                                               (t (cond ((or (and (member (list i (1+ j) 'T) final-moves :test #'equal)
+                                                                  (member (list i (1+ j) 'L) final-moves :test #'equal) )
+                                                             (and (member (list (1- i) (1+ j) 'L) final-moves :test #'equal)
+                                                                  (member (list i (1+ j) 'T) final-moves :test #'equal) )
+                                                             (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                                  (member (list i j 'L) final-moves :test #'equal) )
+                                                             (and (member (list (1- i) (1+ j) 'L) final-moves :test #'equal)
+                                                                  (member (list i (1+ j) 'L) final-moves :test #'equal) ) ) t )
+                                                        (t nil) )) ))
+                            ((equal j (1- num-of-cols)) (cond ((equal i 0) (cond ((and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                                       (member (list i (1- j) 'L) final-moves :test #'equal) ) t )
+                                                                                 (t nil) ))
+                                                              (t (cond ((or (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                                 (member (list i j 'L) final-moves :test #'equal) )
+                                                                            (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                                                 (member (list i (1- j) 'T) final-moves :test #'equal) )
+                                                                            (and (member (list (1- i) j 'R) final-moves :test #'equal)
+                                                                                 (member (list i j 'R) final-moves :test #'equal) )
+                                                                            (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                                                 (member (list i j 'L) final-moves :test #'equal) ) ) t )
+                                                                       (t nil) )) ))
+                            (t (cond ((equal i 0) (cond ((or (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                  (member (list i j 'L) final-moves :test #'equal) )
+                                                             (and (member (list i (1+ j) 'T) final-moves :test #'equal)
+                                                                  (member (list i (1+ j) 'L) final-moves :test #'equal) ) ) t )
+                                                        (t nil) ))
+                                     (t (cond ((or (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                        (member (list i (1- j) 'T) final-moves :test #'equal) )
+                                                   (and (member (list (1- i) (1+ j) 'L) final-moves :test #'equal)
+                                                        (member (list i (1+ j) 'T) final-moves :test #'equal) )
+                                                   (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                        (member (list i j 'L) final-moves :test #'equal) )
+                                                   (and (member (list i (1+ j) 'T) final-moves :test #'equal)
+                                                        (member (list i (1+ j) 'L) final-moves :test #'equal) )
+                                                   (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                        (member (list i j 'L) final-moves :test #'equal) )
+                                                   (and (member (list (1- i) (1+ j) 'L) final-moves :test #'equal)
+                                                        (member (list i (1+ j) 'L) final-moves :test #'equal) ) ) t )
+                                              (t nil) )) )) ))
+        ((equal e 'L) (cond ((equal i 0) (cond ((equal j 0) (cond ((and (member (list (1+ i) j 'T) final-moves :test #'equal)
+                                                                        (member (list (1+ i) j 'L) final-moves :test #'equal) ) t )
+                                                                  (t nil) ))
+                                               (t (cond ((or (and (member (list (1+ i) (1- j) 'T) final-moves :test #'equal)
+                                                                  (member (list (1+ i) j 'L) final-moves :test #'equal) )
+                                                             (and (member (list (1+ i) j 'L) final-moves :test #'equal)
+                                                                  (member (list (1+ i) j 'T) final-moves :test #'equal) )
+                                                             (and (member (list (1+ i) (1- j) 'T) final-moves :test #'equal)
+                                                                  (member (list (1+ i) j 'T) final-moves :test #'equal) )
+                                                             (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                  (member (list i j 'T) final-moves :test #'equal) ) ) t )
+                                                        (t nil) )) ))
+                            ((equal i (1- num-of-rows)) (cond ((equal j 0) (cond ((and (member (list i j 'T) final-moves :test #'equal)
+                                                                                       (member (list (1- i) j 'L) final-moves :test #'equal) ) t )
+                                                                                 (t nil) ))
+                                                              (t (cond ((or (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                                 (member (list (1- i) j 'L) final-moves :test #'equal) )
+                                                                            (and (member (list i j 'T) final-moves :test #'equal)
+                                                                                 (member (list (1- i) j 'L) final-moves :test #'equal) )
+                                                                            (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                                                 (member (list i j 'T) final-moves :test #'equal) )
+                                                                            (and (member (list i (1- j) 'B) final-moves :test #'equal)
+                                                                                 (member (list i j 'B) final-moves :test #'equal) ) ) t )
+                                                                       (t nil) )) ))
+                            (t (cond ((equal j 0) (cond ((or (and (member (list i j 'T) final-moves :test #'equal)
+                                                                  (member (list (1- i) j 'L) final-moves :test #'equal) )
+                                                             (and (member (list (1+ i) j 'T) final-moves :test #'equal)
+                                                                  (member (list (1+ i) j 'L) final-moves :test #'equal) ) ) t )
+                                                        (t nil) ))
+                                     (t (cond ((or (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                        (member (list i (1- j) 'T) final-moves :test #'equal) )
+                                                   (and (member (list (1- i) j 'L) final-moves :test #'equal)
+                                                        (member (list i j 'T) final-moves :test #'equal) )
+                                                   (and (member (list i (1- j) 'T) final-moves :test #'equal)
+                                                        (member (list i j 'T) final-moves :test #'equal) )
+                                                   (and (member (list (1+ i) (1- j) 'T) final-moves :test #'equal)
+                                                        (member (list (1+ i) j 'L) final-moves :test #'equal) )
+                                                   (and (member (list (1+ i) j 'T) final-moves :test #'equal)
+                                                        (member (list (1+ i) j 'L) final-moves :test #'equal) )
+                                                   (and (member (list (1+ i) (1- j) 'T) final-moves :test #'equal)
+                                                        (member (list (1+ i) j 'T) final-moves :test #'equal) ) ) t )
+                                              (t nil) )) )) ))
+        ((equal e 'R) (cond ((equal i 0) (cond ((and (member (list (1+ i) j 'R) final-moves :test #'equal)
+                                                     (member (list i (1+ j) 'T) final-moves :test #'equal) ) t )
+                                               (t nil) ))
+                            (t (cond ((or (and (member (list (1- i) j 'R) final-moves :test #'equal)
+                                               (member (list i j 'T) final-moves :test #'equal) )
+                                          (and (member (list (1+ i) j 'T) final-moves :test #'equal)
+                                               (member (list (1+ i) j 'R) final-moves :test #'equal) ) ) t )
+                                     (t nil) )) ))
+        (t (cond ((equal j 0) (cond ((and (member (list i (1+ j) 'L) final-moves :test #'equal)
+                                          (member (list i (1+ j) 'B) final-moves :test #'equal) ) t )
+                                    (t nil) ))
+                 ((equal j (1- num-of-cols)) (cond ((or (and (member (list i (1- j) 'B) final-moves :test #'equal)
+                                                             (member (list i j 'L) final-moves :test #'equal) )
+                                                        (and (member (list i (1+ j) 'L) final-moves :test #'equal)
+                                                             (member (list i (1+ j) 'B) final-moves :test #'equal) ) ) t )
+                                                   (t nil) )) )) ) )
 
 ;;------------------------------------------------------------------------------------------------------------------------------
 
@@ -141,7 +206,7 @@
   (cond ((equal direction 0) (setf (nth k edge-type)
                              (1- (nth k edge-type)) ) )
         (t (setf (nth k edge-type) (1+ (nth k edge-type))) ) ) )
-        
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Check if loop is closed
@@ -151,30 +216,32 @@
   (loop for amove in final-moves do
     (cond ((or (equal (nth 2 amove) 'L)
                (equal (nth 2 amove) 'R) ) (update-edge-count (nth 0 amove) v 1) )
-          (t (update-edge-count (nth 1 amove) h 1)) ) ) 
+          (t (update-edge-count (nth 1 amove) h 1)) ) )
     (cond ((or (some #'(lambda (n) (equal (mod n 2) 1)) h)
                (some #'(lambda (n) (equal (mod n 2) 1)) v) ) nil )
           (t t) ) )
-          
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Remove marked move from the board
 (defun undo-move (move)
   (update-score (nth 0 move) (nth 1 move) (nth 2 move) 0)
   (setf final-moves (delete move final-moves :test #'equal)) )
-  
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 ;;;Check if adding an edge would violate the number of edges that square is supposed to have
 (defun counter-mismatch (i j e)
-  (cond ((> (nth j (nth i cboard)) (nth j (nth i board))) t)
-        (t (setq dupmove (get-duplicate-move i j e)) (cond ((and (not (null dupmove))
-                                                                 (> (nth (nth 1 dupmove) (nth (nth 0 dupmove) cboard)) (nth (nth 1 dupmove) (nth (nth 0 dupmove) board))) ) t)
-                                                           (t nil) )) ) )
+  (cond ((numberp (nth j (nth i board))) (cond ((> (nth j (nth i cboard)) (nth j (nth i board))) t)
+                                               (t (setq dupmove (get-duplicate-move i j e)) (cond ((and (not (null dupmove))
+											                                                            (numberp (nth (nth 1 dupmove) (nth (nth 0 dupmove) board))) ) (cond ((> (nth (nth 1 dupmove) (nth (nth 0 dupmove) cboard)) (nth (nth 1 dupmove) (nth (nth 0 dupmove) board))) t)
+                                                                                                                                                                            (t nil) ))
+                                                                                                  (t nil) )) ))
+        (t nil) ) )
 
 ;;------------------------------------------------------------------------------------------------------------------------------
 
-(defun print-row (row r c)    
+(defun print-row (row r c)
   (cond ((null row) (cond ((member (list r (1- c) 'R) final-moves :test #'equal) (princ "|"))
                           (t (princ " ")) ))
         (t (cond ((member (list r c 'L) final-moves :test #'equal) (princ "|"))
@@ -183,7 +250,7 @@
            (cond ((equal '- (car row)) (princ " "))
                  (t (princ (car row))) )
            (print-row (cdr row) r (1+ c)) ) ) )
-           
+
 ;;------------------------------------------------------------------------------------------------------------------------------
 
 (defun print-board (pboard num-of-rows num-of-cols mypos)
@@ -212,7 +279,7 @@
                (terpri)
                (return t) ) )
            (princ (1+ mypos))
-           (princ " ")          
+           (princ " ")
            (print-row (car pboard) mypos 0)
            (terpri)
            (print-board (cdr pboard) num-of-rows num-of-cols (1+ mypos))
@@ -230,7 +297,7 @@
   ;;(read)
   ;;(print-board pboard num-of-rows num-of-cols 0)
   (cond ((or (counter-mismatch i j e)
-             (is-crossing num-of-rows num-of-cols) ) (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
+             (is-crossing i j e num-of-rows num-of-cols) ) (setf (nth 2 (find move list-of-moves :test #'equal)) 'W)
                                                      (undo-move (list i j e))
                                                      (return-from dfs 0) )
         ((is-loop) (cond ((equal cboard board) (return-from dfs 1))
