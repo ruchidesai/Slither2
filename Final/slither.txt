@@ -1,0 +1,34 @@
+;;;describe the game to user
+(defun describe-game ()
+  (write-line " ")
+  (write-line " ")
+  (write-line "Welcome to the game of Slither!")
+  (format t "Your goal is to put edges on the board so that they form a closed loop with no~%crossing or branches.~%")
+  (terpri)
+  (write-line "Rules:")
+  (format t "1. Enter the edge to be put on a square on the board in the format M N E, where ~%   M = row number, N = column number and E = type of edge (T = top, B = bottom,~%   L = left and R = right).~%" )
+  (format t "2. If there is a number written inside a square then it will have exactly that~%   many edges surrounding it. ~%   For example if a square has 3 inside it, it should have 3 edges surrounding~%   it. If a square has 0 inside it, it should not have any edge surrounding it.~%   If a square has no number inside it, it can have any number of edges ~%   surrounding it.~%")
+  (write-line "3. Entering the same edge twice will undo that move.")
+  (write-line "4. There is no time or move limit.")
+  (write-line "5. Game will end when you are successfully able to put a loop on the board.")
+  (terpri) )
+  
+;;--------------------------------------------------------------------------------------------------------------------------------
+
+(defun slither ()
+  (describe-game)
+  (loop
+    (setq choice 'y)
+    (princ "Enter 1 to play the game manually and 0 to make the computer play it: ")
+    (setq method (read))
+	(terpri)
+    (cond ((equal method 1) (load "D:/Ruchi/docs/UFL/COURSES/AI/Project/Slither/SearchImplementation/Part2/Final/slitherman.txt")
+	                        (slitherman) )
+          (t (load "D:/Ruchi/docs/UFL/COURSES/AI/Project/Slither/SearchImplementation/Part2/Final/slitherauto.txt")
+		     (slitherauto) ) )
+	(princ "Do you want to play again? (y/n): ")
+    (setq choice (read))
+	(terpri)
+    (when (equal choice 'n)
+      (return t) ) ) )
+  
